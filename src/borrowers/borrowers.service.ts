@@ -7,6 +7,7 @@ import {
   Injectable,
   NotFoundException,
   ConflictException,
+  BadRequestException,
 } from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
 import { CreateBorrowerDto } from './dto/create-borrower.dto';
@@ -31,8 +32,21 @@ export class BorrowersService {
     }
   }
 
-  async findAll() {
-    return prisma.borrower.findMany();
+  async findAll(page = 1, limit = 10) {
+    const skip = (page - 1) * limit;
+
+    const [data, total] = await Promise.all([
+      prisma.borrower.findMany({ skip, take: limit }),
+      prisma.borrower.count(),
+    ]);
+
+    return {
+      data,
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+    };
   }
 
   async findOne(id: number) {
@@ -62,7 +76,22 @@ export class BorrowersService {
   }
 
   async remove(id: number) {
-    await this.findOne(id); // Check if borrower exists
+    await this.findOne(id);
+
+    // Prevent deletion if borrower has unreturned books
+    const activeBorrow = await prisma.borrowRecord.findFirst({
+      where: {
+        borrowerId: id,
+        status: { in: ['BORROWED', 'OVERDUE'] },
+      },
+    });
+
+    if (activeBorrow) {
+      throw new BadRequestException(
+        'Cannot delete this borrower because they have unreturned books.',
+      );
+    }
+
     return prisma.borrower.delete({ where: { id } });
   }
 }

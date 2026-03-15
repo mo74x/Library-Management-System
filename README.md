@@ -1,4 +1,4 @@
-# 📚 Bosta Library Management System
+# 📚 Library Management System
 
 ![NestJS](https://img.shields.io/badge/nestjs-%23E0234E.svg?style=for-the-badge&logo=nestjs&logoColor=white)
 ![Prisma](https://img.shields.io/badge/Prisma-3982CE?style=for-the-badge&logo=Prisma&logoColor=white)
@@ -12,92 +12,165 @@ A robust RESTful API built to manage a modern library's core operations: Books, 
 
 ## 🚀 Key Features
 
-*   **📖 Books Management**: Comprehensive CRUD operations featuring an advanced search endpoint (by title, author, or ISBN).
-*   **👥 Borrower Management**: Smooth registration, profile updates, removal, and listing capabilities.
-*   **🔄 Borrowing Process**: Streamlined checkout and return flows backed by strictly managed **Prisma Database Transactions** to ensure robust inventory integrity. Users can seamlessly check overdue statuses and access currently borrowed lists.
-*   **📊 Analytical Reports (Bonus)**: One-click extraction of the previous month's operational data. Endpoints deliver pure `.csv` raw data for both general borrowing logs and overdue books.
-*   **🛡️ Security & Scalability (Bonus)**: 
-    *   **Rate Limiting**: Integrated `@nestjs/throttler` to block malicious abuse globally and endpoint-specifically.
-    *   **Basic Authentication**: Protects the core Books API utilizing custom authentication guards.
-    *   **Data Validation**: Strict input validation using Nest's powerful validation pipes to combat bad data payloads and SQL injections.
+*   **📖 Books Management**: Full CRUD with advanced search by title, author, or ISBN. Paginated list responses.
+*   **👥 Borrower Management**: Registration, profile updates, removal, and paginated listing.
+*   **🔄 Borrowing Process**: Checkout and return flows using **Prisma Database Transactions** for inventory integrity. Overdue tracking and per-borrower book lists.
+*   **📊 Analytical Reports (Bonus)**: Export borrowing data and overdue records as **CSV** or **Excel (.xlsx)**. Supports custom date ranges via `startDate` / `endDate` query parameters (defaults to last month).
+*   **🛡️ Security & Scalability (Bonus)**:
+    *   **Rate Limiting**: `@nestjs/throttler` applied globally and per-endpoint.
+    *   **Basic Authentication**: Protects the Books API via custom guards.
+    *   **Data Validation**: Strict input validation using class-validator pipes.
+    *   **Deletion Guards**: Books currently checked out and borrowers with unreturned books cannot be deleted — the API returns a clear `400 Bad Request`.
+*   **📄 Advanced Pagination**: All `GET` list endpoints accept `?page=1&limit=10` query parameters and return a standardized metadata envelope:
+    ```json
+    {
+      "data": [ ... ],
+      "total": 42,
+      "page": 1,
+      "limit": 10,
+      "totalPages": 5
+    }
+    ```
 
 ---
 
-## 🗄️ Database Schema Representation
-
-The core Postgres architecture relies heavily on relational mapping to easily track the flow of books between users.
+## 🗄️ Database Schema
 
 | Model | Primary Fields | Unique / Key Roles | Relations |
 | :--- | :--- | :--- | :--- |
-| **`Book`** | `id`, `title`, `author`, `isbn`, `availableQuantity`, `shelfLocation` | `isbn` is unique. | `1:N` with Borrow records. |
-| **`Borrower`** | `id`, `name`, `email`, `registeredDate` | `email` is unique. | `1:N` with Borrow records. |
-| **`BorrowRecord`** | `id`, `bookId`, `borrowerId`, `checkoutDate`, `dueDate`, `returnDate`, `status` | `status` enum maps state. | Connects Book ↔ Borrower. |
+| **`Book`** | `id`, `title`, `author`, `isbn`, `availableQuantity`, `shelfLocation` | `isbn` is unique. Indexed on `title`, `author`, `isbn`. | `1:N` with BorrowRecord |
+| **`Borrower`** | `id`, `name`, `email`, `registeredDate` | `email` is unique. Indexed on `name`, `email`. | `1:N` with BorrowRecord |
+| **`BorrowRecord`** | `id`, `bookId`, `borrowerId`, `checkoutDate`, `dueDate`, `returnDate`, `status` | `status` enum: `BORROWED`, `RETURNED`, `OVERDUE`. Indexed on `(borrowerId, status)`, `(dueDate, status)`. | Connects Book ↔ Borrower |
 
 ---
 
 ## 🛠️ Quick Start Guide
 
-You have two simple ways to get this project up and running locally.
-
-### Method A: Docker Compose (Highly Recommended)
-
-Simply utilize the full node+postgres environment built out in the provided Docker configuration.
+### Method A: Docker Compose (Recommended)
 
 ```bash
 docker-compose up --build
 ```
-> The API immediately becomes available at `http://localhost:3000`.
+> The API becomes available at `http://localhost:3000`.
 
 ### Method B: Manual Local Setup
 
-If you prefer to run the Node API in your standard local environment instead of Docker:
-
-**1. Install all dependencies:**
+**1. Install dependencies:**
 ```bash
 npm install --legacy-peer-deps
 ```
 
-**2. Setup your local environment variables:**  
-Create a `.env` file at the root tracking the following template:
+**2. Configure environment variables:**
+Create a `.env` file at the project root:
 ```env
 DATABASE_URL="postgresql://bosta_user:bosta_password@localhost:5432/bosta_library?schema=public"
 API_USER=admin
 API_PASS=bosta2026
 ```
 
-**3. Launch the database (Optional Docker DB):**
+**3. Start the database:**
 ```bash
 docker-compose up db -d
 ```
 
-**4. Sync your Prisma Schema to Postgres:**
+**4. Generate Prisma client & sync schema:**
 ```bash
 npx prisma generate
 npx prisma db push
 ```
 
-**5. Launch it!**
+**5. Start the development server:**
 ```bash
 npm run start:dev
 ```
 
 ---
 
-## 🌐 API Documentation Reference
+## 🌐 API Endpoints
 
-Testing the API is remarkably simple. Once the application is online, navigate to the auto-generated interactive Swagger UI:
+Full interactive documentation is available via **Swagger UI** once the app is running, complete with **rich `@ApiProperty` payload examples** for all requests:
 
 👉 **[http://localhost:3000/docs](http://localhost:3000/docs)**
 
-> **⚠️ Authentication Note:** The Books Module enforces Basic Authentication. To interact with it inside Swagger, click the **Authorize** lock button using:
+> **⚠️ Authentication:** The Books module requires Basic Auth. Click **Authorize** in Swagger:
 > *   **Username:** `admin`
 > *   **Password:** `bosta2026`
 
+### Books (`/books`) — 🔒 Basic Auth Required
+
+| Method | Endpoint | Description |
+| :--- | :--- | :--- |
+| `POST` | `/books` | Add a new book |
+| `GET` | `/books?search=&page=1&limit=10` | List/search books (paginated) |
+| `GET` | `/books/:id` | Get a book by ID |
+| `PATCH` | `/books/:id` | Update a book |
+| `DELETE` | `/books/:id` | Delete a book (blocked with 400 error if checked out) |
+
+### Borrowers (`/borrowers`)
+
+| Method | Endpoint | Description |
+| :--- | :--- | :--- |
+| `POST` | `/borrowers` | Register a new borrower |
+| `GET` | `/borrowers?page=1&limit=10` | List all borrowers (paginated) |
+| `GET` | `/borrowers/:id` | Get a borrower by ID |
+| `PATCH` | `/borrowers/:id` | Update a borrower |
+| `DELETE` | `/borrowers/:id` | Delete a borrower (blocked with 400 error if has unreturned books) |
+
+### Borrowing (`/borrowing`)
+
+| Method | Endpoint | Description |
+| :--- | :--- | :--- |
+| `POST` | `/borrowing/checkout` | Checkout a book `{ bookId, borrowerId }` |
+| `PATCH` | `/borrowing/return/:recordId` | Return a borrowed book |
+| `GET` | `/borrowing/borrower/:borrowerId` | List books currently held by a borrower |
+| `GET` | `/borrowing/overdue` | List all overdue books |
+
+### Analytical Exports (`/borrowing/export`)
+
+All export endpoints support real-time data streaming and accept optional `startDate` and `endDate` query parameters (ISO 8601 format like `2024-01-01`). 
+
+**Fallback Logic:** *If no dates are provided, the system intelligently defaults to creating an export encompassing the last ~30 days (1 month prior to the exact moment of the request).*
+
+| Method | Endpoint | Format | Description |
+| :--- | :--- | :--- | :--- |
+| `GET` | `/borrowing/export/borrows?startDate=&endDate=` | CSV | Export borrowing records |
+| `GET` | `/borrowing/export/overdue?startDate=&endDate=` | CSV | Export overdue records |
+| `GET` | `/borrowing/export/borrows/xlsx?startDate=&endDate=` | Excel | Export borrowing records |
+| `GET` | `/borrowing/export/overdue/xlsx?startDate=&endDate=` | Excel | Export overdue records |
+
 ---
 
-## 🧪 Testing Scope
+## 🧪 Testing
 
-A standard unit-testing suite validates module stability. To run the automated checks against the Borrowers service:
+A comprehensive unit testing suite using **Jest** is included to validate core business logic, mocking Prisma heavily utilizing custom module-scoped function references to ensure reliable, clean runs without needing a live database. 
+
+As per assessment specs, tests were implemented for the **Borrowers Module** (`borrowers.service.spec.ts`), covering **13 distinct test cases** across all operations:
+
+1. **Create Base**: Happy path creation tracking timestamps.
+2. **Create Conflict**: Handling `P2002` duplicate email exceptions correctly.
+3. **FindAll Default**: Returning correctly paginated structures given empty query vars.
+4. **FindAll Precision**: Honoring manual `page` and `limit` calculations accurately.
+5. **FindOne Hit/Miss**: Finding a user vs tossing `NotFoundException`.
+6. **Update Validations**: Handling partial updates and avoiding email takeovers (Conflict).
+7. **Remove Guards**: Ensures successful deletes only happen if `borrowRecord.findFirst` yields null (meaning no unreturned books). Prevents corrupting library inventory logic via `BadRequestException`.
+
+Run the unit test suite:
 ```bash
 npm run test
 ```
+
+---
+
+## 📦 Tech Stack
+
+| Layer | Technology |
+| :--- | :--- |
+| Runtime | Node.js + NestJS |
+| Database | PostgreSQL |
+| ORM | Prisma |
+| Validation | class-validator + class-transformer |
+| Auth | Custom Basic Auth Guard |
+| Rate Limiting | @nestjs/throttler |
+| Docs | Swagger (OpenAPI) |
+| Export | json2csv + xlsx |
+| Containerization | Docker + Docker Compose |

@@ -11,6 +11,7 @@ import {
 import { PrismaClient } from '@prisma/client';
 import { CheckoutBookDto } from './dto/checkout-book.dto';
 import { parse } from 'json2csv';
+import * as XLSX from 'xlsx';
 
 const prisma = new PrismaClient();
 
@@ -119,14 +120,33 @@ export class BorrowingService {
     });
   }
 
-  // Export last month borrows
-  async exportLastMonthBorrows() {
-    const oneMonthAgo = new Date();
-    oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
+  // Helper to resolve start/end date range
+  private resolveDateRange(startDate?: string, endDate?: string) {
+    const start = startDate
+      ? new Date(startDate)
+      : (() => {
+          const d = new Date();
+          d.setMonth(d.getMonth() - 1);
+          return d;
+        })();
+    const end = endDate ? new Date(endDate) : new Date();
+
+    if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+      throw new BadRequestException(
+        'Invalid date format. Use ISO 8601 format (e.g. 2024-01-01).',
+      );
+    }
+
+    return { start, end };
+  }
+
+  // Export borrows for a specific period (defaults to last month)
+  async exportBorrowsData(startDate?: string, endDate?: string) {
+    const { start, end } = this.resolveDateRange(startDate, endDate);
 
     const records = await prisma.borrowRecord.findMany({
       where: {
-        checkoutDate: { gte: oneMonthAgo },
+        checkoutDate: { gte: start, lte: end },
       },
       include: { book: true, borrower: true },
     });
@@ -145,21 +165,19 @@ export class BorrowingService {
     return parse(formattedData);
   }
 
-  // Export last month overdue books
-  async exportLastMonthOverdue() {
-    const oneMonthAgo = new Date();
-    oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
+  // Export overdue borrows for a specific period (defaults to last month)
+  async exportOverdueData(startDate?: string, endDate?: string) {
+    const { start, end } = this.resolveDateRange(startDate, endDate);
 
     const records = await prisma.borrowRecord.findMany({
       where: {
-        checkoutDate: { gte: oneMonthAgo },
+        checkoutDate: { gte: start, lte: end },
         status: 'BORROWED',
         dueDate: { lt: new Date() },
       },
       include: { book: true, borrower: true },
     });
 
-    //format data identically , then return parse(formattedData);
     const formattedData = records.map((record) => ({
       RecordID: record.id,
       BookTitle: record.book.title,
@@ -171,5 +189,64 @@ export class BorrowingService {
     }));
 
     return parse(formattedData);
+  }
+
+  // Export borrows as Excel (.xlsx)
+  async exportBorrowsXlsx(startDate?: string, endDate?: string) {
+    const { start, end } = this.resolveDateRange(startDate, endDate);
+
+    const records = await prisma.borrowRecord.findMany({
+      where: {
+        checkoutDate: { gte: start, lte: end },
+      },
+      include: { book: true, borrower: true },
+    });
+
+    const formattedData = records.map((record) => ({
+      RecordID: record.id,
+      BookTitle: record.book.title,
+      BorrowerName: record.borrower.name,
+      BorrowerEmail: record.borrower.email,
+      CheckoutDate: record.checkoutDate.toISOString(),
+      DueDate: record.dueDate.toISOString(),
+      ReturnDate: record.returnDate
+        ? record.returnDate.toISOString()
+        : 'Not Returned',
+      Status: record.status,
+    }));
+
+    const worksheet = XLSX.utils.json_to_sheet(formattedData);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Borrows');
+    return XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' });
+  }
+
+  // Export overdue borrows as Excel (.xlsx)
+  async exportOverdueXlsx(startDate?: string, endDate?: string) {
+    const { start, end } = this.resolveDateRange(startDate, endDate);
+
+    const records = await prisma.borrowRecord.findMany({
+      where: {
+        checkoutDate: { gte: start, lte: end },
+        status: 'BORROWED',
+        dueDate: { lt: new Date() },
+      },
+      include: { book: true, borrower: true },
+    });
+
+    const formattedData = records.map((record) => ({
+      RecordID: record.id,
+      BookTitle: record.book.title,
+      BorrowerName: record.borrower.name,
+      DueDate: record.dueDate.toISOString(),
+      DaysOverdue: Math.floor(
+        (new Date().getTime() - record.dueDate.getTime()) / (1000 * 3600 * 24),
+      ),
+    }));
+
+    const worksheet = XLSX.utils.json_to_sheet(formattedData);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Overdue');
+    return XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' });
   }
 }

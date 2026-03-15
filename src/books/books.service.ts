@@ -7,6 +7,7 @@ import {
   Injectable,
   NotFoundException,
   ConflictException,
+  BadRequestException,
 } from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
 import { CreateBookDto } from './dto/create-book.dto';
@@ -29,19 +30,32 @@ export class BooksService {
     }
   }
 
-  async findAll(searchQuery?: string) {
-    if (searchQuery) {
-      return prisma.book.findMany({
-        where: {
+  async findAll(searchQuery?: string, page = 1, limit = 10) {
+    const skip = (page - 1) * limit;
+    const where = searchQuery
+      ? {
           OR: [
-            { title: { contains: searchQuery, mode: 'insensitive' } },
-            { author: { contains: searchQuery, mode: 'insensitive' } },
+            { title: { contains: searchQuery, mode: 'insensitive' as const } },
+            {
+              author: { contains: searchQuery, mode: 'insensitive' as const },
+            },
             { isbn: { equals: searchQuery } },
           ],
-        },
-      });
-    }
-    return prisma.book.findMany();
+        }
+      : {};
+
+    const [data, total] = await Promise.all([
+      prisma.book.findMany({ where, skip, take: limit }),
+      prisma.book.count({ where }),
+    ]);
+
+    return {
+      data,
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+    };
   }
 
   async findOne(id: number) {
@@ -70,6 +84,21 @@ export class BooksService {
 
   async remove(id: number) {
     await this.findOne(id);
+
+    // Prevent deletion if the book is currently checked out
+    const activeBorrow = await prisma.borrowRecord.findFirst({
+      where: {
+        bookId: id,
+        status: { in: ['BORROWED', 'OVERDUE'] },
+      },
+    });
+
+    if (activeBorrow) {
+      throw new BadRequestException(
+        'Cannot delete this book because it is currently checked out.',
+      );
+    }
+
     return prisma.book.delete({ where: { id } });
   }
 }

@@ -24,8 +24,15 @@ async function bootstrap() {
   // Swagger setup
   const config = new DocumentBuilder()
     .setTitle('Bosta Library Management API')
-    .setDescription('The Bosta Library API description')
+    .setDescription(
+      `The Back-end API for managing Books, Borrowers, and the Borrowing workflow.
+      
+### Roles & Authentication
+- **Books Module** requires Basic Authentication (username: \`admin\`, password: \`bosta2026\`).
+- Other endpoints are public but rate-limited.`,
+    )
     .setVersion('1.0')
+    .addServer('http://localhost:3000', 'Local Environment')
     .addBasicAuth()
     .build();
   const document = SwaggerModule.createDocument(app, config);
@@ -33,4 +40,4 @@ async function bootstrap() {
 
   await app.listen(3000);
 }
-bootstrap();
+void bootstrap();

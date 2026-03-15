@@ -10,6 +10,7 @@ import {
 } from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
 import { CheckoutBookDto } from './dto/checkout-book.dto';
+import { parse } from 'json2csv';
 
 const prisma = new PrismaClient();
 
@@ -116,5 +117,59 @@ export class BorrowingService {
         borrower: true,
       },
     });
+  }
+
+  // Export last month borrows
+  async exportLastMonthBorrows() {
+    const oneMonthAgo = new Date();
+    oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
+
+    const records = await prisma.borrowRecord.findMany({
+      where: {
+        checkoutDate: { gte: oneMonthAgo },
+      },
+      include: { book: true, borrower: true },
+    });
+
+    const formattedData = records.map((record) => ({
+      RecordID: record.id,
+      BookTitle: record.book.title,
+      BorrowerName: record.borrower.name,
+      BorrowerEmail: record.borrower.email,
+      CheckoutDate: record.checkoutDate,
+      DueDate: record.dueDate,
+      ReturnDate: record.returnDate || 'Not Returned',
+      Status: record.status,
+    }));
+
+    return parse(formattedData);
+  }
+
+  // Export last month overdue books
+  async exportLastMonthOverdue() {
+    const oneMonthAgo = new Date();
+    oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
+
+    const records = await prisma.borrowRecord.findMany({
+      where: {
+        checkoutDate: { gte: oneMonthAgo },
+        status: 'BORROWED',
+        dueDate: { lt: new Date() },
+      },
+      include: { book: true, borrower: true },
+    });
+
+    //format data identically , then return parse(formattedData);
+    const formattedData = records.map((record) => ({
+      RecordID: record.id,
+      BookTitle: record.book.title,
+      BorrowerName: record.borrower.name,
+      DueDate: record.dueDate,
+      DaysOverdue: Math.floor(
+        (new Date().getTime() - record.dueDate.getTime()) / (1000 * 3600 * 24),
+      ),
+    }));
+
+    return parse(formattedData);
   }
 }

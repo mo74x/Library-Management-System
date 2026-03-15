@@ -24,12 +24,23 @@ const mockBorrowRecord = {
 };
 
 // Mock the Prisma Client BEFORE importing the service
+class PrismaClientKnownRequestError extends Error {
+  code: string;
+  constructor(message: string, { code }: { code: string }) {
+    super(message);
+    this.code = code;
+  }
+}
+
 jest.mock('@prisma/client', () => {
   return {
     PrismaClient: jest.fn().mockImplementation(() => ({
       borrower: mockBorrower,
       borrowRecord: mockBorrowRecord,
     })),
+    Prisma: {
+      PrismaClientKnownRequestError,
+    },
   };
 });
 
@@ -68,7 +79,12 @@ describe('BorrowersService', () => {
     });
 
     it('should throw ConflictException on duplicate email', async () => {
-      mockBorrower.create.mockRejectedValue({ code: 'P2002' });
+      mockBorrower.create.mockRejectedValue(
+        new (require('@prisma/client').Prisma.PrismaClientKnownRequestError)(
+          'Unique constraint failed',
+          { code: 'P2002' },
+        ),
+      );
 
       await expect(
         service.create({ name: 'Jane', email: 'dup@example.com' } as any),
@@ -160,7 +176,12 @@ describe('BorrowersService', () => {
         name: 'John',
         email: 'john@example.com',
       });
-      mockBorrower.update.mockRejectedValue({ code: 'P2002' });
+      mockBorrower.update.mockRejectedValue(
+        new (require('@prisma/client').Prisma.PrismaClientKnownRequestError)(
+          'Unique constraint failed',
+          { code: 'P2002' },
+        ),
+      );
 
       await expect(
         service.update(1, { email: 'taken@example.com' } as any),

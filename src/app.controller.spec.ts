@@ -2,6 +2,11 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 
+// Mock Prisma globally for this test suite
+jest.mock('@prisma/client', () => ({
+  PrismaClient: jest.fn().mockImplementation(() => ({})),
+}));
+
 describe('AppController', () => {
   let appController: AppController;
 

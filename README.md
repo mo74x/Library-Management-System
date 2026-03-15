@@ -32,6 +32,25 @@ A robust RESTful API built to manage a modern library's core operations: Books, 
     }
     ```
 
+## 🏗️ Non-Functional Requirements (NFRs)
+
+The system is designed with strict adherence to architectural best practices concerning performance, scalability, and security:
+
+### ⚡ Performance (Optimized Reads)
+*   **Database Indexing:** The Prisma schema actively indexes heavily queried fields. The `Book` model indexes `title`, `author`, and `isbn`. The `Borrower` model indexes `name` and `email`. These indexes prevent slow full-table scans during search operations.
+*   **In-Memory Caching:** Implemented `@nestjs/cache-manager` to cache the results of the highest-traffic reading operations (e.g., listing all books or retrieving a specific book), dramatically reducing database load and response times for frequent queries.
+
+### 📈 Scalability (Future-Proof Design)
+*   **Modular Architecture:** Built using NestJS's modular domain structure, keeping Books, Borrowers, and Borrowing logic strictly separated.
+*   **Relational Extensibility:** The Prisma database schema utilizes a clear entity-relationship model. Adding new features, such as a `Reviews` table (linked 1:N with Books and Borrowers) or a `Reservations` table (linked similarly to `BorrowRecord`), requires minimal disruption to existing core entities.
+*   **Stateless API:** The RESTful design ensures the API remains stateless, allowing it to be horizontally scaled across multiple instances behind a load balancer without session management issues.
+
+### 🛡️ Security (Threat Prevention)
+*   **Input Validation & Sanitization:** Uses `class-validator` and `class-transformer` alongside a global NestJS `ValidationPipe`. The pipe is strictly configured with `whitelist: true` and `forbidNonWhitelisted: true`, guaranteeing that malicious or unexpected payload data is automatically stripped or rejected before reaching the service layer.
+*   **ORM Protection:** Prisma ORM inherently parameterizes all database queries, providing complete immunity against SQL Injection attacks.
+*   **HTTP Header Security:** Integrated `Helmet.js` to automatically set secure HTTP headers, protecting against common web vulnerabilities like Cross-Site Scripting (XSS) and clickjacking.
+*   **Rate Limiting:** Protects against brute-force and Denial-of-Service (DoS) attacks using `@nestjs/throttler`.
+
 ---
 
 ## 🗄️ Database Schema

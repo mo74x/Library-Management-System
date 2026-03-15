@@ -20,7 +20,7 @@ export class BorrowingService {
   async checkout(checkoutBookDto: CheckoutBookDto) {
     const { bookId, borrowerId } = checkoutBookDto;
 
-    // Set due date to 14 days from now [cite: 20]
+    // Set due date to 14 days from now
     const dueDate = new Date();
     dueDate.setDate(dueDate.getDate() + 14);
 
@@ -33,19 +33,19 @@ export class BorrowingService {
         throw new BadRequestException('This book is currently out of stock');
       }
 
-      // 2. Check if borrower exists
+      // Check if borrower exists
       const borrower = await tx.borrower.findUnique({
         where: { id: borrowerId },
       });
       if (!borrower) throw new NotFoundException('Borrower not found');
 
-      // 3. Decrement available quantity
+      // Decrement available quantity
       await tx.book.update({
         where: { id: bookId },
         data: { availableQuantity: { decrement: 1 } },
       });
 
-      // 4. Create the borrow record to keep track of who checked it out [cite: 16, 17]
+      //the borrow record to keep track of who checked it out
       return tx.borrowRecord.create({
         data: {
           bookId,
@@ -57,7 +57,7 @@ export class BorrowingService {
     });
   }
 
-  // A borrower can return a book [cite: 18]
+  // A borrower can return a book
   async returnBook(recordId: number) {
     return prisma.$transaction(async (tx) => {
       const record = await tx.borrowRecord.findUnique({
@@ -88,7 +88,7 @@ export class BorrowingService {
     });
   }
 
-  // A borrower can check the books they currently have [cite: 19]
+  // A borrower can check the books they currently have
   async findCurrentByBorrower(borrowerId: number) {
     return prisma.borrowRecord.findMany({
       where: {
@@ -103,7 +103,7 @@ export class BorrowingService {
     });
   }
 
-  // List books that are overdue [cite: 20]
+  // List books that are overdue
   async findOverdueBooks() {
     return prisma.borrowRecord.findMany({
       where: {

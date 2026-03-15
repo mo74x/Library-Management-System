@@ -25,6 +25,8 @@ services:
       - "3000:3000"
     environment:
       DATABASE_URL: postgresql://bosta_user:bosta_password@db:5432/bosta_library?schema=public
+      API_USER: admin
+      API_PASS: bosta2026
     depends_on:
       - db
     restart: unless-stopped

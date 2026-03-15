@@ -13,33 +13,35 @@ import { CreateBorrowerDto } from './dto/create-borrower.dto';
 import { UpdateBorrowerDto } from './dto/update-borrower.dto';
 import { UseGuards } from '@nestjs/common';
 import { ThrottlerGuard, Throttle } from '@nestjs/throttler';
+import { ApiTags, ApiOperation } from '@nestjs/swagger';
 
+@ApiTags('Borrowers')
 @Controller('borrowers')
 @UseGuards(ThrottlerGuard)
 export class BorrowersController {
   constructor(private readonly borrowersService: BorrowersService) {}
 
-  // Register a new borrower
+  @ApiOperation({ summary: 'Register a new borrower' })
   @Throttle({ default: { limit: 5, ttl: 60000 } })
   @Post()
   create(@Body() createBorrowerDto: CreateBorrowerDto) {
     return this.borrowersService.create(createBorrowerDto);
   }
 
-  // List all borrowers
+  @ApiOperation({ summary: 'List all borrowers' })
   @Get()
   findAll() {
     return this.borrowersService.findAll();
   }
 
-  // Get a single borrower
+  @ApiOperation({ summary: 'Get a single borrower by ID' })
   @Throttle({ default: { limit: 5, ttl: 60000 } })
   @Get(':id')
   findOne(@Param('id', ParseIntPipe) id: number) {
     return this.borrowersService.findOne(id);
   }
 
-  // Update a borrower's details
+  @ApiOperation({ summary: 'Update a borrower details' })
   @Throttle({ default: { limit: 5, ttl: 60000 } })
   @Patch(':id')
   update(
@@ -49,7 +51,7 @@ export class BorrowersController {
     return this.borrowersService.update(id, updateBorrowerDto);
   }
 
-  // Delete a borrower
+  @ApiOperation({ summary: 'Delete a borrower' })
   @Throttle({ default: { limit: 5, ttl: 60000 } })
   @Delete(':id')
   remove(@Param('id', ParseIntPipe) id: number) {

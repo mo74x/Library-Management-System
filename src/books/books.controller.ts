@@ -14,32 +14,39 @@ import { CreateBookDto } from './dto/create-book.dto';
 import { UpdateBookDto } from './dto/update-book.dto';
 import { UseGuards } from '@nestjs/common';
 import { ThrottlerGuard, Throttle } from '@nestjs/throttler';
+import { BasicAuthGuard } from '../common/guards/basic-auth.guard';
+import { ApiTags, ApiOperation, ApiBasicAuth, ApiQuery } from '@nestjs/swagger';
 
+@ApiTags('Books')
+@ApiBasicAuth()
 @Controller('books')
-@UseGuards(ThrottlerGuard)
+@UseGuards(ThrottlerGuard, BasicAuthGuard)
 export class BooksController {
   constructor(private readonly booksService: BooksService) {}
 
-  // Add a book
+  @ApiOperation({ summary: 'Add a new book' })
   @Throttle({ default: { limit: 10, ttl: 60000 } })
   @Post()
   create(@Body() createBookDto: CreateBookDto) {
     return this.booksService.create(createBookDto);
   }
 
-  // List all books OR Search for a book
+  @ApiOperation({
+    summary: 'List all books or search by query (title, author, ISBN)',
+  })
+  @ApiQuery({ name: 'search', required: false, type: String })
   @Get()
   findAll(@Query('search') search?: string) {
     return this.booksService.findAll(search);
   }
 
-  // Get a single book by ID
+  @ApiOperation({ summary: 'Get a single book by ID' })
   @Get(':id')
   findOne(@Param('id', ParseIntPipe) id: number) {
     return this.booksService.findOne(id);
   }
 
-  // Update a book's details
+  @ApiOperation({ summary: 'Update a book details' })
   @Throttle({ default: { limit: 10, ttl: 60000 } })
   @Patch(':id')
   update(
@@ -49,7 +56,7 @@ export class BooksController {
     return this.booksService.update(id, updateBookDto);
   }
 
-  // Delete a book
+  @ApiOperation({ summary: 'Delete a book' })
   @Throttle({ default: { limit: 10, ttl: 60000 } })
   @Delete(':id')
   remove(@Param('id', ParseIntPipe) id: number) {

@@ -24,6 +24,7 @@ import { ApiTags, ApiOperation, ApiBasicAuth, ApiQuery } from '@nestjs/swagger';
 export class BooksController {
   constructor(private readonly booksService: BooksService) {}
 
+  // Handles POST requests to add a new book to the library
   @ApiOperation({ summary: 'Add a new book' })
   @Throttle({ default: { limit: 10, ttl: 60000 } })
   @Post()
@@ -31,6 +32,7 @@ export class BooksController {
     return this.booksService.create(createBookDto);
   }
 
+  // Fetches a paginated list of books, optionally filtering by a search term
   @ApiOperation({
     summary: 'List all books or search by query (title, author, ISBN)',
   })
@@ -60,12 +62,14 @@ export class BooksController {
     );
   }
 
+  // Retrieves details for a specific book using its ID
   @ApiOperation({ summary: 'Get a single book by ID' })
   @Get(':id')
   findOne(@Param('id', ParseIntPipe) id: number) {
     return this.booksService.findOne(id);
   }
 
+  // Updates the information of an existing book
   @ApiOperation({ summary: 'Update a book details' })
   @Throttle({ default: { limit: 10, ttl: 60000 } })
   @Patch(':id')
@@ -76,6 +80,7 @@ export class BooksController {
     return this.booksService.update(id, updateBookDto);
   }
 
+  // Removes a book from the library's catalog
   @ApiOperation({ summary: 'Delete a book' })
   @Throttle({ default: { limit: 10, ttl: 60000 } })
   @Delete(':id')

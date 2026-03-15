@@ -22,6 +22,7 @@ import { ApiTags, ApiOperation, ApiQuery } from '@nestjs/swagger';
 export class BorrowersController {
   constructor(private readonly borrowersService: BorrowersService) {}
 
+  // Handles the registration of a new borrower
   @ApiOperation({ summary: 'Register a new borrower' })
   @Throttle({ default: { limit: 5, ttl: 60000 } })
   @Post()
@@ -29,6 +30,7 @@ export class BorrowersController {
     return this.borrowersService.create(createBorrowerDto);
   }
 
+  // Returns a paginated list of all registered borrowers
   @ApiOperation({ summary: 'List all borrowers' })
   @ApiQuery({
     name: 'page',
@@ -50,6 +52,7 @@ export class BorrowersController {
     );
   }
 
+  // Looks up a specific borrower by their ID
   @ApiOperation({ summary: 'Get a single borrower by ID' })
   @Throttle({ default: { limit: 5, ttl: 60000 } })
   @Get(':id')
@@ -57,6 +60,7 @@ export class BorrowersController {
     return this.borrowersService.findOne(id);
   }
 
+  // Updates a borrower's personal details
   @ApiOperation({ summary: 'Update a borrower details' })
   @Throttle({ default: { limit: 5, ttl: 60000 } })
   @Patch(':id')
@@ -67,6 +71,7 @@ export class BorrowersController {
     return this.borrowersService.update(id, updateBorrowerDto);
   }
 
+  // Deletes a borrower's account from the system
   @ApiOperation({ summary: 'Delete a borrower' })
   @Throttle({ default: { limit: 5, ttl: 60000 } })
   @Delete(':id')

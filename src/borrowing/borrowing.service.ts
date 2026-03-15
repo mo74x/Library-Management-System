@@ -1,8 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unsafe-return */
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
-/* eslint-disable @typescript-eslint/require-await */
-/* eslint-disable @typescript-eslint/no-unsafe-call */
-/* eslint-disable @typescript-eslint/no-unsafe-member-access */
 import {
   Injectable,
   NotFoundException,
@@ -17,7 +12,7 @@ const prisma = new PrismaClient();
 
 @Injectable()
 export class BorrowingService {
-  // A borrower can check out a book
+  // Initiates a checkout transaction, validating stock availability and borrower existence
   async checkout(checkoutBookDto: CheckoutBookDto) {
     const { bookId, borrowerId } = checkoutBookDto;
 
@@ -46,7 +41,7 @@ export class BorrowingService {
         data: { availableQuantity: { decrement: 1 } },
       });
 
-      //the borrow record to keep track of who checked it out
+      // Generate the initial borrow record linking the borrower to the book
       return tx.borrowRecord.create({
         data: {
           bookId,
@@ -58,7 +53,7 @@ export class BorrowingService {
     });
   }
 
-  // A borrower can return a book
+  // Processes book returns safely using a transaction to ensure inventory count accuracy
   async returnBook(recordId: number) {
     return prisma.$transaction(async (tx) => {
       const record = await tx.borrowRecord.findUnique({
@@ -89,7 +84,7 @@ export class BorrowingService {
     });
   }
 
-  // A borrower can check the books they currently have
+  // Retrieves all active or overdue books currently held by a specific borrower
   async findCurrentByBorrower(borrowerId: number) {
     return prisma.borrowRecord.findMany({
       where: {
@@ -104,7 +99,7 @@ export class BorrowingService {
     });
   }
 
-  // List books that are overdue
+  // Identifies all borrowing records where the due date has passed without a return
   async findOverdueBooks() {
     return prisma.borrowRecord.findMany({
       where: {
@@ -120,7 +115,7 @@ export class BorrowingService {
     });
   }
 
-  // Helper to resolve start/end date range
+  // Utility function: parses query string dates or falls back to a rolling 30-day window
   private resolveDateRange(startDate?: string, endDate?: string) {
     const start = startDate
       ? new Date(startDate)
@@ -140,7 +135,7 @@ export class BorrowingService {
     return { start, end };
   }
 
-  // Export borrows for a specific period (defaults to last month)
+  // Generates a CSV stream of overall borrowing activity within the specified timeframe
   async exportBorrowsData(startDate?: string, endDate?: string) {
     const { start, end } = this.resolveDateRange(startDate, endDate);
 
@@ -165,7 +160,7 @@ export class BorrowingService {
     return parse(formattedData);
   }
 
-  // Export overdue borrows for a specific period (defaults to last month)
+  // Generates a CSV stream focusing exclusively on overdue records for follow-ups
   async exportOverdueData(startDate?: string, endDate?: string) {
     const { start, end } = this.resolveDateRange(startDate, endDate);
 
@@ -191,7 +186,7 @@ export class BorrowingService {
     return parse(formattedData);
   }
 
-  // Export borrows as Excel (.xlsx)
+  // Packages borrowing activity into an Excel (.xlsx) workbook for administrative reporting
   async exportBorrowsXlsx(startDate?: string, endDate?: string) {
     const { start, end } = this.resolveDateRange(startDate, endDate);
 
@@ -218,10 +213,11 @@ export class BorrowingService {
     const worksheet = XLSX.utils.json_to_sheet(formattedData);
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, 'Borrows');
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-return
     return XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' });
   }
 
-  // Export overdue borrows as Excel (.xlsx)
+  // Packages overdue records into an Excel (.xlsx) workbook for administrative reporting
   async exportOverdueXlsx(startDate?: string, endDate?: string) {
     const { start, end } = this.resolveDateRange(startDate, endDate);
 
@@ -247,6 +243,7 @@ export class BorrowingService {
     const worksheet = XLSX.utils.json_to_sheet(formattedData);
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, 'Overdue');
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-return
     return XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' });
   }
 }

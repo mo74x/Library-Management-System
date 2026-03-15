@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import {
   Controller,
   Post,
@@ -24,6 +23,7 @@ import { ApiTags, ApiOperation, ApiQuery } from '@nestjs/swagger';
 export class BorrowingController {
   constructor(private readonly borrowingService: BorrowingService) {}
 
+  // Handles the process of checking out a book to a borrower
   @ApiOperation({ summary: 'Checkout a book for a borrower' })
   @Throttle({ default: { limit: 5, ttl: 60000 } })
   @Post('checkout')
@@ -31,6 +31,7 @@ export class BorrowingController {
     return this.borrowingService.checkout(checkoutBookDto);
   }
 
+  // Processes a returned book and updates its borrowing record
   @ApiOperation({ summary: 'Return a borrowed book' })
   @Throttle({ default: { limit: 5, ttl: 60000 } })
   @Patch('return/:recordId')
@@ -38,6 +39,7 @@ export class BorrowingController {
     return this.borrowingService.returnBook(recordId);
   }
 
+  // Retrieves all active and overdue borrowing records for a specific borrower
   @ApiOperation({
     summary: 'List current books borrowed by a specific borrower',
   })
@@ -46,12 +48,14 @@ export class BorrowingController {
     return this.borrowingService.findCurrentByBorrower(borrowerId);
   }
 
+  // Lists all books that are currently overdue across the library
   @ApiOperation({ summary: 'List books that are overdue' })
   @Get('overdue')
   findOverdueBooks() {
     return this.borrowingService.findOverdueBooks();
   }
 
+  // Generates and downloads a CSV report of borrowing activity over a date range
   @ApiOperation({
     summary: 'Export borrowing data to CSV (defaults to last month)',
   })
@@ -82,6 +86,7 @@ export class BorrowingController {
     res.send(csv);
   }
 
+  // Generates and downloads a CSV report specifically for overdue books
   @ApiOperation({
     summary: 'Export overdue borrows to CSV (defaults to last month)',
   })
@@ -112,6 +117,7 @@ export class BorrowingController {
     res.send(csv);
   }
 
+  // Generates and downloads an Excel (.xlsx) report of borrowing activity
   @ApiOperation({
     summary: 'Export borrowing data to Excel (.xlsx) (defaults to last month)',
   })
@@ -138,6 +144,7 @@ export class BorrowingController {
     @Query('startDate') startDate?: string,
     @Query('endDate') endDate?: string,
   ) {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     const buffer: Buffer = await this.borrowingService.exportBorrowsXlsx(
       startDate,
       endDate,
@@ -145,6 +152,7 @@ export class BorrowingController {
     res.send(buffer);
   }
 
+  // Generates and downloads an Excel (.xlsx) report specifically for overdue books
   @ApiOperation({
     summary: 'Export overdue borrows to Excel (.xlsx) (defaults to last month)',
   })
@@ -171,6 +179,7 @@ export class BorrowingController {
     @Query('startDate') startDate?: string,
     @Query('endDate') endDate?: string,
   ) {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     const buffer: Buffer = await this.borrowingService.exportOverdueXlsx(
       startDate,
       endDate,

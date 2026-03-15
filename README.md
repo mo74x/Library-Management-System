@@ -1,4 +1,4 @@
-# 📚 Library Management System
+# Library Management System
 
 ![NestJS](https://img.shields.io/badge/nestjs-%23E0234E.svg?style=for-the-badge&logo=nestjs&logoColor=white)
 ![Prisma](https://img.shields.io/badge/Prisma-3982CE?style=for-the-badge&logo=Prisma&logoColor=white)
@@ -10,18 +10,18 @@ A robust RESTful API built to manage a modern library's core operations: Books, 
 
 ---
 
-## 🚀 Key Features
+## Key Features
 
-*   **📖 Books Management**: Full CRUD with advanced search by title, author, or ISBN. Paginated list responses.
-*   **👥 Borrower Management**: Registration, profile updates, removal, and paginated listing.
-*   **🔄 Borrowing Process**: Checkout and return flows using **Prisma Database Transactions** for inventory integrity. Overdue tracking and per-borrower book lists.
-*   **📊 Analytical Reports (Bonus)**: Export borrowing data and overdue records as **CSV** or **Excel (.xlsx)**. Supports custom date ranges via `startDate` / `endDate` query parameters (defaults to last month).
-*   **🛡️ Security & Scalability (Bonus)**:
+*   **Books Management**: Full CRUD with advanced search by title, author, or ISBN. Paginated list responses.
+*   **Borrower Management**: Registration, profile updates, removal, and paginated listing.
+*   **Borrowing Process**: Checkout and return flows using **Prisma Database Transactions** for inventory integrity. Overdue tracking and per-borrower book lists.
+*   **Analytical Reports (Bonus)**: Export borrowing data and overdue records as **CSV** or **Excel (.xlsx)**. Supports custom date ranges via `startDate` / `endDate` query parameters (defaults to last month).
+*   **Security & Scalability (Bonus)**:
     *   **Rate Limiting**: `@nestjs/throttler` applied globally and per-endpoint.
     *   **Basic Authentication**: Protects the Books API via custom guards.
     *   **Data Validation**: Strict input validation using class-validator pipes.
     *   **Deletion Guards**: Books currently checked out and borrowers with unreturned books cannot be deleted — the API returns a clear `400 Bad Request`.
-*   **📄 Advanced Pagination**: All `GET` list endpoints accept `?page=1&limit=10` query parameters and return a standardized metadata envelope:
+*   **Advanced Pagination**: All `GET` list endpoints accept `?page=1&limit=10` query parameters and return a standardized metadata envelope:
     ```json
     {
       "data": [ ... ],
@@ -32,20 +32,20 @@ A robust RESTful API built to manage a modern library's core operations: Books, 
     }
     ```
 
-## 🏗️ Non-Functional Requirements (NFRs)
+## Non-Functional Requirements (NFRs)
 
 The system is designed with strict adherence to architectural best practices concerning performance, scalability, and security:
 
-### ⚡ Performance (Optimized Reads)
+### Performance (Optimized Reads)
 *   **Database Indexing:** The Prisma schema actively indexes heavily queried fields. The `Book` model indexes `title`, `author`, and `isbn`. The `Borrower` model indexes `name` and `email`. These indexes prevent slow full-table scans during search operations.
 *   **In-Memory Caching:** Implemented `@nestjs/cache-manager` to cache the results of the highest-traffic reading operations (e.g., listing all books or retrieving a specific book), dramatically reducing database load and response times for frequent queries.
 
-### 📈 Scalability (Future-Proof Design)
+### Scalability (Future-Proof Design)
 *   **Modular Architecture:** Built using NestJS's modular domain structure, keeping Books, Borrowers, and Borrowing logic strictly separated.
 *   **Relational Extensibility:** The Prisma database schema utilizes a clear entity-relationship model. Adding new features, such as a `Reviews` table (linked 1:N with Books and Borrowers) or a `Reservations` table (linked similarly to `BorrowRecord`), requires minimal disruption to existing core entities.
 *   **Stateless API:** The RESTful design ensures the API remains stateless, allowing it to be horizontally scaled across multiple instances behind a load balancer without session management issues.
 
-### 🛡️ Security (Threat Prevention)
+### Security (Threat Prevention)
 *   **Input Validation & Sanitization:** Uses `class-validator` and `class-transformer` alongside a global NestJS `ValidationPipe`. The pipe is strictly configured with `whitelist: true` and `forbidNonWhitelisted: true`, guaranteeing that malicious or unexpected payload data is automatically stripped or rejected before reaching the service layer.
 *   **ORM Protection:** Prisma ORM inherently parameterizes all database queries, providing complete immunity against SQL Injection attacks.
 *   **HTTP Header Security:** Integrated `Helmet.js` to automatically set secure HTTP headers, protecting against common web vulnerabilities like Cross-Site Scripting (XSS) and clickjacking.
@@ -53,7 +53,7 @@ The system is designed with strict adherence to architectural best practices con
 
 ---
 
-## 🗄️ Database Schema
+## Database Schema
 
 ### Entity-Relationship Diagram (ERD)
 ```mermaid
@@ -100,7 +100,7 @@ erDiagram
 
 ---
 
-## 🛠️ Quick Start Guide
+## Quick Start Guide
 
 ### Method A: Docker Compose (Recommended)
 
@@ -141,17 +141,17 @@ npm run start:dev
 
 ---
 
-## 🌐 API Endpoints (Documentation)
+## API Endpoints (Documentation)
 
 Full interactive documentation is automatically generated and available via **Swagger UI** once the application is running. This includes comprehensive documentation of **all endpoint paths, expected inputs (request bodies, query parameters), and expected outputs (response shapes, error status codes).** Both successes and errors are carefully documented using detailed `@ApiResponse` definitions.
 
-👉 **[http://localhost:3000/docs](http://localhost:3000/docs)**
+**[http://localhost:3000/docs](http://localhost:3000/docs)**
 
-> **⚠️ Authentication:** The Books module requires Basic Auth. Click **Authorize** in Swagger:
+> **Authentication:** The Books module requires Basic Auth. Click **Authorize** in Swagger:
 > *   **Username:** `admin`
 > *   **Password:** `bosta2026`
 
-### Books (`/books`) — 🔒 Basic Auth Required
+### Books (`/books`) — Basic Auth Required
 
 | Method | Endpoint | Description |
 | :--- | :--- | :--- |
@@ -195,7 +195,7 @@ All export endpoints support real-time data streaming and accept optional `start
 
 ---
 
-## 🧪 Testing
+## Testing
 
 A comprehensive unit testing suite using **Jest** is included to validate core business logic, mocking Prisma heavily utilizing custom module-scoped function references to ensure reliable, clean runs without needing a live database. 
 
@@ -216,7 +216,7 @@ npm run test
 
 ---
 
-## 📦 Tech Stack
+## Tech Stack
 
 | Layer | Technology |
 | :--- | :--- |

@@ -1,0 +1,64 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Book {
+  id                Int            @id @default(autoincrement())
+  title             String
+  author            String
+  isbn              String         @unique
+  availableQuantity Int            @default(0)
+  shelfLocation     String
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+
+  // Relations
+  borrowRecords     BorrowRecord[]
+
+  // Indexes
+  @@index([title])
+  @@index([author])
+  @@index([isbn])
+}
+
+model Borrower {
+  id             Int            @id @default(autoincrement())
+  name           String
+  email          String         @unique
+  registeredDate DateTime       @default(now())
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  // Relations
+  borrowRecords  BorrowRecord[]
+
+  // Indexes
+  @@index([name])
+  @@index([email])
+}
+
+model BorrowRecord {
+  id           Int       @id @default(autoincrement())
+  bookId       Int
+  borrowerId   Int
+  checkoutDate DateTime  @default(now())
+  dueDate      DateTime 
+  returnDate   DateTime? 
+  status       BorrowStatus @default(BORROWED)
+  book         Book      @relation(fields: [bookId], references: [id])
+  borrower     Borrower  @relation(fields: [borrowerId], references: [id])
+
+  // Indexes
+  @@index([borrowerId, status])
+  @@index([dueDate, status])
+}
+
+enum BorrowStatus {
+  BORROWED
+  RETURNED
+  OVERDUE
+}

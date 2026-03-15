@@ -1,0 +1,33 @@
+version: '3.8'
+
+services:
+  # The PostgreSQL Database Service
+  db:
+    image: postgres:15-alpine
+    container_name: bosta_library_db
+    environment:
+      POSTGRES_USER: bosta_user
+      POSTGRES_PASSWORD: bosta_password
+      POSTGRES_DB: bosta_library
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+
+  # The NestJS API Service
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: bosta_library_api
+    ports:
+      - "3000:3000"
+    environment:
+      DATABASE_URL: postgresql://bosta_user:bosta_password@db:5432/bosta_library?schema=public
+    depends_on:
+      - db
+    restart: unless-stopped
+
+volumes:
+  postgres_data:

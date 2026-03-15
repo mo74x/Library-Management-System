@@ -36,6 +36,43 @@ A robust RESTful API built to manage a modern library's core operations: Books, 
 
 ## 🗄️ Database Schema
 
+### Entity-Relationship Diagram (ERD)
+```mermaid
+erDiagram
+    Book {
+        Int id PK
+        String title
+        String author
+        String isbn UK
+        Int availableQuantity
+        String shelfLocation
+        DateTime createdAt
+        DateTime updatedAt
+    }
+    
+    Borrower {
+        Int id PK
+        String name
+        String email UK
+        DateTime registeredDate
+        DateTime createdAt
+        DateTime updatedAt
+    }
+    
+    BorrowRecord {
+        Int id PK
+        Int bookId FK
+        Int borrowerId FK
+        DateTime checkoutDate
+        DateTime dueDate
+        DateTime returnDate
+        BorrowStatus status
+    }
+    
+    Book ||--o{ BorrowRecord : "has many"
+    Borrower ||--o{ BorrowRecord : "has many"
+```
+
 | Model | Primary Fields | Unique / Key Roles | Relations |
 | :--- | :--- | :--- | :--- |
 | **`Book`** | `id`, `title`, `author`, `isbn`, `availableQuantity`, `shelfLocation` | `isbn` is unique. Indexed on `title`, `author`, `isbn`. | `1:N` with BorrowRecord |
@@ -61,12 +98,11 @@ npm install --legacy-peer-deps
 ```
 
 **2. Configure environment variables:**
-Create a `.env` file at the project root:
-```env
-DATABASE_URL="postgresql://bosta_user:bosta_password@localhost:5432/bosta_library?schema=public"
-API_USER=admin
-API_PASS=bosta2026
+Create a `.env` file at the project root (you can copy `.env.example`):
+```bash
+cp .env.example .env
 ```
+*(The default `.env.example` configurations match the `docker-compose.yml` settings perfectly.)*
 
 **3. Start the database:**
 ```bash
@@ -86,9 +122,9 @@ npm run start:dev
 
 ---
 
-## 🌐 API Endpoints
+## 🌐 API Endpoints (Documentation)
 
-Full interactive documentation is available via **Swagger UI** once the app is running, complete with **rich `@ApiProperty` payload examples** for all requests:
+Full interactive documentation is automatically generated and available via **Swagger UI** once the application is running. This includes comprehensive documentation of **all endpoint paths, expected inputs (request bodies, query parameters), and expected outputs (response shapes, error status codes).** Both successes and errors are carefully documented using detailed `@ApiResponse` definitions.
 
 👉 **[http://localhost:3000/docs](http://localhost:3000/docs)**
 

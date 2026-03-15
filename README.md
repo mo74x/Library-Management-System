@@ -1,91 +1,103 @@
-# Bosta Library Management System
+# 📚 Bosta Library Management System
 
-A RESTful API built with **NestJS**, **Prisma**, and **PostgreSQL** that implements a library management system for managing books, borrowers, and the borrowing process.
+![NestJS](https://img.shields.io/badge/nestjs-%23E0234E.svg?style=for-the-badge&logo=nestjs&logoColor=white)
+![Prisma](https://img.shields.io/badge/Prisma-3982CE?style=for-the-badge&logo=Prisma&logoColor=white)
+![PostgreSQL](https://img.shields.io/badge/postgresql-4169e1?style=for-the-badge&logo=postgresql&logoColor=white)
+![Docker](https://img.shields.io/badge/docker-%230db7ed.svg?style=for-the-badge&logo=docker&logoColor=white)
+![Swagger](https://img.shields.io/badge/-Swagger-%23Clojure?style=for-the-badge&logo=swagger&logoColor=white)
 
-## 🚀 Features
+A robust RESTful API built to manage a modern library's core operations: Books, Borrowers, and the Borrowing workflow. Developed as a technical assessment for **Bosta**.
 
-- **Books Management**: Full CRUD operations with search functionality.
-- **Borrower Management**: Register, update, delete, and list borrowers.
-- **Borrowing Process**: Checkout books, return books, check overdue status, and list currently borrowed books.
-- **Security & Best Practices**: 
-  - Basic Authentication protects sensitive endpoints (Books API globally).
-  - Rate limiting protects endpoints from abuse (using `@nestjs/throttler`).
-  - Strict input validation prevents bad data and SQL Injection scenarios.
-- **Reporting**: Export last month's borrows or overdue books directly to CSV.
+---
 
-## 🗄️ Database Schema
+## 🚀 Key Features
 
-The database uses PostgreSQL via Prisma. Here is the structure:
+*   **📖 Books Management**: Comprehensive CRUD operations featuring an advanced search endpoint (by title, author, or ISBN).
+*   **👥 Borrower Management**: Smooth registration, profile updates, removal, and listing capabilities.
+*   **🔄 Borrowing Process**: Streamlined checkout and return flows backed by strictly managed **Prisma Database Transactions** to ensure robust inventory integrity. Users can seamlessly check overdue statuses and access currently borrowed lists.
+*   **📊 Analytical Reports (Bonus)**: One-click extraction of the previous month's operational data. Endpoints deliver pure `.csv` raw data for both general borrowing logs and overdue books.
+*   **🛡️ Security & Scalability (Bonus)**: 
+    *   **Rate Limiting**: Integrated `@nestjs/throttler` to block malicious abuse globally and endpoint-specifically.
+    *   **Basic Authentication**: Protects the core Books API utilizing custom authentication guards.
+    *   **Data Validation**: Strict input validation using Nest's powerful validation pipes to combat bad data payloads and SQL injections.
 
-- **Book**: `id` (PK) | `title` | `author` | `isbn` (Unique) | `availableQuantity` | `shelfLocation` | `createdAt` | `updatedAt`
-- **Borrower**: `id` (PK) | `name` | `email` (Unique) | `registeredDate` | `createdAt` | `updatedAt`
-- **BorrowRecord**: `id` (PK) | `bookId` (FK) | `borrowerId` (FK) | `checkoutDate` | `dueDate` | `returnDate` | `status` (BORROWED, RETURNED, OVERDUE)
+---
 
-Relations:
-- A `Book` can have many `BorrowRecords` (1:N)
-- A `Borrower` can have many `BorrowRecords` (1:N)
+## 🗄️ Database Schema Representation
 
-## 🛠️ Setup & Run Instructions
+The core Postgres architecture relies heavily on relational mapping to easily track the flow of books between users.
 
-### 1. Using Docker (Recommended)
+| Model | Primary Fields | Unique / Key Roles | Relations |
+| :--- | :--- | :--- | :--- |
+| **`Book`** | `id`, `title`, `author`, `isbn`, `availableQuantity`, `shelfLocation` | `isbn` is unique. | `1:N` with Borrow records. |
+| **`Borrower`** | `id`, `name`, `email`, `registeredDate` | `email` is unique. | `1:N` with Borrow records. |
+| **`BorrowRecord`** | `id`, `bookId`, `borrowerId`, `checkoutDate`, `dueDate`, `returnDate`, `status` | `status` enum maps state. | Connects Book ↔ Borrower. |
 
-You can launch both the PostgreSQL database and the API using Docker Compose.
+---
+
+## 🛠️ Quick Start Guide
+
+You have two simple ways to get this project up and running locally.
+
+### Method A: Docker Compose (Highly Recommended)
+
+Simply utilize the full node+postgres environment built out in the provided Docker configuration.
 
 ```bash
 docker-compose up --build
 ```
+> The API immediately becomes available at `http://localhost:3000`.
 
-The API will be available at `http://localhost:3000`.
+### Method B: Manual Local Setup
 
-### 2. Running Locally
+If you prefer to run the Node API in your standard local environment instead of Docker:
 
-If you prefer to run the application locally without the API Docker container:
+**1. Install all dependencies:**
+```bash
+npm install --legacy-peer-deps
+```
 
-1. **Install dependencies**
-   ```bash
-   npm install --legacy-peer-deps
-   ```
+**2. Setup your local environment variables:**  
+Create a `.env` file at the root tracking the following template:
+```env
+DATABASE_URL="postgresql://bosta_user:bosta_password@localhost:5432/bosta_library?schema=public"
+API_USER=admin
+API_PASS=bosta2026
+```
 
-2. **Start the database** (Optional: you can just run the DB via docker)
-   ```bash
-   docker-compose up db -d
-   ```
+**3. Launch the database (Optional Docker DB):**
+```bash
+docker-compose up db -d
+```
 
-3. **Configure Environment**
-   Create a `.env` file in the root directory:
-   ```env
-   DATABASE_URL="postgresql://bosta_user:bosta_password@localhost:5432/bosta_library?schema=public"
-   API_USER=admin
-   API_PASS=bosta2026
-   ```
+**4. Sync your Prisma Schema to Postgres:**
+```bash
+npx prisma generate
+npx prisma db push
+```
 
-4. **Sync Database Schema**
-   ```bash
-   npx prisma generate
-   npx prisma db push
-   ```
-   *Note: Using `db push` is fine for development layout. For production migrations use `npx prisma migrate deploy`.*
+**5. Launch it!**
+```bash
+npm run start:dev
+```
 
-5. **Start the application**
-   ```bash
-   npm run start:dev
-   ```
+---
 
-## 📚 API Documentation
+## 🌐 API Documentation Reference
 
-Once the application is running, the interactive Swagger API documentation is available at:
+Testing the API is remarkably simple. Once the application is online, navigate to the auto-generated interactive Swagger UI:
 
 👉 **[http://localhost:3000/docs](http://localhost:3000/docs)**
 
-From there, you can view all endpoints, expected inputs/outputs, and test the API directly from your browser.
+> **⚠️ Authentication Note:** The Books Module enforces Basic Authentication. To interact with it inside Swagger, click the **Authorize** lock button using:
+> *   **Username:** `admin`
+> *   **Password:** `bosta2026`
 
-*Note: The Books API requires Basic Authentication. Click the "Authorize" button in Swagger and use the credentials below:*
-- **Username**: `admin`
-- **Password**: `bosta2026`
+---
 
-## 🧪 Running Tests
+## 🧪 Testing Scope
 
-To run the unit tests (which cover the Borrowers Service):
+A standard unit-testing suite validates module stability. To run the automated checks against the Borrowers service:
 ```bash
 npm run test
 ```
